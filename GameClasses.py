@@ -1,5 +1,8 @@
 import pygame
 from enum import Enum
+import random
+import gif_pygame
+import time
 
 
 class Direction(Enum):
@@ -61,11 +64,13 @@ class Ship(PygameObject):
 
     def shoot(self,
               speed: float,
+              enemies: list,
               direction: Direction,
               texture: pygame.Surface,
-              sound_effect: pygame.mixer.Sound) -> None:
+              sound_effect: pygame.mixer.Sound | None):
+
         if self.bullet is not None:
-            return
+            return None
 
         if direction == direction.UP:
             speed *= -1
@@ -77,29 +82,16 @@ class Ship(PygameObject):
                              0,
                              speed,
                              self.damage,
+                             enemies,
+                             self,
                              texture,
                              self.screen
                              )
-        sound_effect.play()
-        self.bullet.draw()
 
-    def check_bullet(self, enemies: list) -> None:
-        if self.bullet is None:
-            return
+        if sound_effect:
+            sound_effect.play()
 
-        # When bullet hits the edge, it vanishes
-        if not self.bullet.move():
-            self.bullet = None
-            return
-
-        for enemy in enemies:
-            if self.bullet.rect.colliderect(enemy.rect):
-                enemy.hp -= 10
-                self.bullet = None
-                return
-
-        # If nothign happened, bullet is shown
-        self.bullet.draw()
+        return self.bullet
 
     def is_alive(self):
         return self.hp > 0
@@ -120,11 +112,17 @@ class Enemy(Ship):
         super().__init__(x, y, w, h, speed_x, speed_y, hp, damage, texture, screen)
         self.direction = Direction.LEFT
 
-    def random_movement(self):
+    def random_movement(self, enemies):
         if not self.move():
             self.speed_x *= -1
+            self.move()
+            return
 
-        self.move()
+        for enemy in enemies:
+            if self.rect.colliderect(enemy.rect):
+                self.speed_x *= -1
+                self.move()
+                return
 
 
 class Bullet(PygameObject):
@@ -136,7 +134,51 @@ class Bullet(PygameObject):
                  speed_x: float,
                  speed_y: float,
                  damage: int,
+                 enemies: list,
+                 ship: Ship,
                  texture: pygame.Surface,
                  screen: pygame.Surface):
         super().__init__(x, y, w, h, speed_x, speed_y, texture, screen)
         self.damage = damage
+        self.enemies = enemies
+        self.ship = ship
+
+    def check_bullet(self) -> bool:
+        """
+        Checks if the bullet is about to be destroyed or not False if it should be destroyed, True if stays
+        :return: bool
+        """
+
+        # When bullet hits the edge, it vanishes
+        if not self.move():
+            self.ship.bullet = None
+            return False
+
+        for enemy in self.enemies:
+            if self.rect.colliderect(enemy.rect):
+                enemy.hp -= 10
+                self.ship.bullet = None
+                return False
+
+        # If nothing happened, bullet is shown
+        return True
+
+
+class Effect:
+    def __init__(self, duration: float, effect: gif_pygame.GIFPygame, rect: pygame.rect.Rect, screen: pygame.Surface):
+        self.effect = effect
+        gif_pygame.transform.scale(self.effect, (rect.width, rect.height))
+        self.rect = rect
+        self.screen = screen
+        self.duration = duration
+        self.start_time = time.time()
+
+    def update(self) -> bool:
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+        if elapsed_time >= self.duration:
+            return False
+
+        self.effect.render(self.screen, self.rect)
+
+        return True
