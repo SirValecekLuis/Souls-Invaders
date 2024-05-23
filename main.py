@@ -7,16 +7,17 @@ from GameClasses import *
 # TODO: Add some special effect or bonuses or anything
 # TODO: Make a dictionary of textures and pass around (include screen)
 # TODO: Add a pause after boss fight like async 3s pause or something like that
-# TODO: Change music for different boss
-# TODO: Add more shoots for bosses -> MORE info like
-# TODO: Maybe do not bound shooting to existing bullet but rather a time passed (that could be used to set different timers for shooting for different enemies etc.)
 # TODO: Add tips and hints to intro screen + explanation how to play
 # TODO: Add special attack for some key (like ctrl)
 # TODO: Add maybe sound for ship getting hit
+# TODO: Winning music after completing the game
+
+# TODO: Fix shooting? / Change first boss, too easy
 
 def spawn_enemies(speed_x: float,
-                  hp: int,
-                  damage: int,
+                  hp: float,
+                  damage: float,
+                  shooting_speed: float,
                   count: int,
                   boss: bool,
                   enemies: list,
@@ -28,30 +29,50 @@ def spawn_enemies(speed_x: float,
     # For bosses
     if boss:
         enemy = Enemy(random.randrange(enemy_texture.get_width(), screen.get_width() - enemy_texture.get_width()),
-                      random.randrange(screen.get_height() // 4, screen.get_height() // 3),
+                      random.randrange(screen.get_height() // 10,
+                                       screen.get_height() // 2 - enemy_texture.get_height()),
                       enemy_texture.get_width(),
                       enemy_texture.get_height(),
                       speed_x,
                       0,
                       hp,
                       damage,
+                      shooting_speed,
                       enemy_texture,
                       screen)
         enemies.append(enemy)
         return
 
-    for i in range(count):
-        enemy = Enemy(random.randrange(enemy_texture.get_width(), screen.get_width() - enemy_texture.get_width()),
-                      i * enemy_texture.get_height(),
-                      enemy_texture.get_width(),
-                      enemy_texture.get_height(),
-                      speed_x,
-                      0,
-                      hp,
-                      damage,
-                      enemy_texture,
-                      screen)
-        enemies.append(enemy)
+    y_list = [i * enemy_texture.get_height() for i in
+              range(int(screen.get_height() // 2.5 // enemy_texture.get_height()))]
+    i = 0
+    collision = False
+    while i < count:
+        x = random.randrange(enemy_texture.get_width(), screen.get_width() - enemy_texture.get_width())
+        y = random.choice(y_list)
+        new_enemy = Enemy(x,
+                          y,
+                          enemy_texture.get_width(),
+                          enemy_texture.get_height(),
+                          speed_x,
+                          0,
+                          hp,
+                          damage,
+                          shooting_speed,
+                          enemy_texture,
+                          screen)
+
+        for enemy in enemies:
+            if new_enemy.rect.colliderect(enemy.rect):
+                collision = True
+                break
+
+        if collision:
+            collision = False
+            continue
+
+        enemies.append(new_enemy)
+        i += 1
 
 
 def check_bullets(bullets: list) -> None:
@@ -73,21 +94,23 @@ def check_enemies(player: Ship,
                   enemies: list,
                   bullets: list,
                   effects: list,
-                  common_enemy_destroyed: pygame.mixer.Sound,
-                  boom_gif: gif_pygame.GIFPygame,
-                  enemy_bullet_texture: pygame.Surface,
-                  screen: pygame.Surface) -> None:
-    for enemy in enemies:
-        if not enemy.is_alive():
-            enemies.remove(enemy)
-            effects.append(Effect(1, boom_gif, enemy.rect, screen))  # Explosion
-            common_enemy_destroyed.play()  # Sound effect of explosion
-            continue
-        enemy.random_movement()
-        bullet = enemy.shoot(screen.get_size()[1] // 64, [player], Direction.DOWN, enemy_bullet_texture, None)
-        if bullet:
-            bullets.append(bullet)
+                  textures: Textures,
+                  sounds: Sounds) -> None:
+    i = 0
+    while i < len(enemies):
+        enemy = enemies[i]
         enemy.draw()
+        if not enemy.is_alive():
+            effects.append(Effect(1, textures["boom_effect"], enemy.rect, textures["screen"]))  # Explosion
+            sounds["small_explosion"].play()  # Sound effect of explosion
+            enemies.pop(i)
+        else:
+            enemy.random_movement(enemies)
+            bullet = enemy.shoot(textures["screen"].get_size()[1] // 64, [player], Direction.DOWN,
+                                 textures["enemy_bullet"], None)
+            if bullet:
+                bullets.append(bullet)
+            i += 1
 
 
 def check_effects(effects: list) -> None:
@@ -99,24 +122,32 @@ def check_effects(effects: list) -> None:
 
 def check_phase(enemies: list,
                 phase: int,
-                enemy_texture: pygame.Surface,
-                first_boss_texture: pygame.Surface,
-                last_boss_texture: pygame.Surface,
-                screen: pygame.Surface) -> int:
+                start_time: int,
+                textures: Textures,
+                sounds: Sounds) -> int:
     if len(enemies) != 0:
         return phase
 
     match phase:
         case 1:
-            spawn_enemies(10, 30, 10, 10, False, enemies, enemy_texture, screen)
+            spawn_enemies(10, 20, 3, 2, 20, False, enemies, textures["enemy"], textures["screen"])
+            pygame.mixer.music.load("sounds/background.mp3")
+            pygame.mixer.music.play()
         case 2:
-            spawn_enemies(5, 200, 30, 1, True, enemies, first_boss_texture, screen)
+            spawn_enemies(15, 1000, 15, 0.3, 1, True, enemies, textures["boss_1"], textures["screen"])
+            pygame.mixer.music.load("sounds/first_boss.mp3")
+            pygame.mixer.music.play()
         case 3:
-            spawn_enemies(10, 30, 10, 10, False, enemies, enemy_texture, screen)
+            spawn_enemies(10, 25, 4, 1.5, 25, False, enemies, textures["enemy"], textures["screen"])
+            pygame.mixer.music.load("sounds/background.mp3")
+            pygame.mixer.music.play()
         case 4:
-            spawn_enemies(5, 500, 30, 1, True, enemies, last_boss_texture, screen)
+            spawn_enemies(18, 2000, 30, 0.25, 1, True, enemies, textures["boss_2"], textures["screen"])
+            pygame.mixer.music.load("sounds/second_boss.mp3")
+            pygame.mixer.music.play()
         case _:
-            game_completed_screen(screen)
+            if len(enemies) == 0:
+                game_completed_screen(start_time, textures["screen"])
 
     return phase + 1
 
@@ -124,9 +155,8 @@ def check_phase(enemies: list,
 def check_event(player: Ship,
                 bullets: list,
                 enemies: list,
-                player_bullet_texture: pygame.Surface,
-                shot_fired_sound_effect: pygame.mixer.Sound,
-                screen: pygame.Surface) -> bool:
+                textures: Textures,
+                sounds: Sounds) -> bool:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return False
@@ -140,8 +170,8 @@ def check_event(player: Ship,
         player.speed_x *= -1
 
     if keys[pygame.K_SPACE]:
-        bullet = player.shoot(screen.get_size()[1] // 32, enemies, Direction.UP, player_bullet_texture,
-                              shot_fired_sound_effect)
+        bullet = player.shoot(textures["screen"].get_size()[1] // 32, enemies, Direction.UP, textures["player_bullet"],
+                              sounds["shot_sound"])
         if bullet:
             bullets.append(bullet)
 
@@ -197,13 +227,36 @@ def game_over_screen(screen: pygame.Surface):
     exit(0)
 
 
-def game_completed_screen(screen: pygame.Surface):
-    print("Hra skončila.")
+def game_completed_screen(start_time, screen: pygame.Surface):
+    font = pygame.font.Font("font/OptimusPrinceps.ttf", 72)
+
+    game_completed_text = font.render("CONGRATULATIONS!", True, (89, 0, 1))
+    game_completed_rect = game_completed_text.get_rect()
+    game_completed_rect.center = (screen.get_width() // 2, screen.get_height() // 3)
+
+    hours, remainder = divmod(pygame.time.get_ticks() - start_time, 3_600_000)
+    minutes, seconds = divmod(remainder, 60_000)
+    seconds //= 1000
+
+    time_text = font.render(f"Time passed: {hours}h {minutes}m {seconds}s", True,
+                            (89, 0, 1))
+    time_rect = time_text.get_rect()
+    time_rect.center = (screen.get_width() // 2, screen.get_height() // 2)
+
+    screen.fill((0, 0, 0))
+    screen.blit(game_completed_text, game_completed_rect)
+    screen.blit(time_text, time_rect)
+
+    pygame.display.flip()
+
+    pygame.time.delay(7_300)
+    pygame.quit()
+    exit(0)
 
 
-def show_text(player: Ship,
-              start_time: float,
-              screen: pygame.Surface):
+def show_ingame_text(player: Ship,
+                     start_time: float,
+                     screen: pygame.Surface):
     font = pygame.font.Font("font/OptimusPrinceps.ttf", 24)
 
     hours, remainder = divmod(pygame.time.get_ticks() - start_time, 3_600_000)
@@ -219,64 +272,14 @@ def show_text(player: Ship,
 
 def main():
     pygame.mixer.init()
+    pygame.mixer.music.set_volume(0.7)
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("Souls Invaders")
-
     clock = pygame.time.Clock()
 
-    # Sound effects
-    shot_fired_sound_effect = pygame.mixer.Sound("sounds/shot_sound.wav")
-    shot_fired_sound_effect.set_volume(0.3)
-
-    common_enemy_destroyed = pygame.mixer.Sound("sounds/small_explosion.wav")
-    common_enemy_destroyed.set_volume(0.5)
-
-    # Music
-    pygame.mixer.music.load("sounds/background.mp3")
-    # first_boss_music = pygame.mixer.Sound("sounds/first_boss.mp3")
-    # second_boss_music = pygame.mixer.Sound("sounds/second_boss.mp3")
-
-    pygame.mixer.music.play()
-    pygame.mixer.music.set_volume(0.7)
-
-    # Textures
-    background_texture = pygame.image.load("textures/background.png")
-    background_texture = pygame.transform.scale(background_texture, (screen.get_width(), screen.get_height()))
-
-    player_texture = pygame.image.load("textures/player.png")
-    player_texture = pygame.transform.scale(player_texture, (100, 100))
-
-    enemy_texture = pygame.image.load("textures/enemy.png")
-    enemy_texture = pygame.transform.scale(enemy_texture, (50, 50))
-
-    first_boss_texture = pygame.image.load("textures/boss_1.png")
-    first_boss_texture = pygame.transform.scale(first_boss_texture, (150, 150))
-
-    last_boss_texture = pygame.image.load("textures/boss_2.png")
-    last_boss_texture = pygame.transform.scale(last_boss_texture, (250, 250))
-
-    player_bullet_texture = pygame.image.load("textures/player_bullet.png")
-    player_bullet_texture = pygame.transform.scale(player_bullet_texture, (40, 40))
-
-    enemy_bullet_texture = pygame.image.load("textures/enemy_bullet.png")
-    enemy_bullet_texture = pygame.transform.scale(enemy_bullet_texture, (40, 40))
-
-    boom_gif = gif_pygame.load("textures/boom_effect.gif")
-
-    effects = []
-
-    # Ship
-    player = Ship(screen.get_size()[0] // 2 - 50,
-                  screen.get_size()[1] - 100,
-                  100,
-                  100,
-                  12,
-                  0,
-                  100,
-                  10,
-                  player_texture,
-                  screen)
+    textures = Textures(screen)
+    sounds = Sounds()
 
     # Enemies
     phase = 1
@@ -285,10 +288,25 @@ def main():
     # bullet
     bullets = []
 
+    # Textures
+    effects = []
+
+    # Player Ship
+    player = Ship(screen.get_size()[0] // 2 - 50,
+                  screen.get_size()[1] - 100,
+                  100,
+                  100,
+                  12,
+                  0,
+                  250,
+                  10,
+                  1,
+                  textures["player"],
+                  textures["screen"])
+
     # intro
     intro_screen(screen)
     pygame.time.wait(300)
-
     start_time = pygame.time.get_ticks()
     #
     #
@@ -299,22 +317,22 @@ def main():
     #
     while True:
         clock.tick(60)
-        screen.blit(background_texture, (0, 0))
+        screen.blit(textures["background"], (0, 0))
 
-        if not check_event(player, bullets, enemies, player_bullet_texture, shot_fired_sound_effect, screen):
+        if not check_event(player, bullets, enemies, textures, sounds):
             break
 
         # Handles all text on screen
-        show_text(player, start_time, screen)
+        show_ingame_text(player, start_time, screen)
 
         # Check what is going on
         check_player(player, screen)
-        check_enemies(player, enemies, bullets, effects, common_enemy_destroyed, boom_gif, enemy_bullet_texture, screen)
+        check_enemies(player, enemies, bullets, effects, textures, sounds)
         check_effects(effects)
         check_bullets(bullets)
 
         # check phase
-        phase = check_phase(enemies, phase, enemy_texture, first_boss_texture, last_boss_texture, screen)
+        phase = check_phase(enemies, phase, start_time, textures, sounds)
 
         # shows everything
         pygame.display.flip()
