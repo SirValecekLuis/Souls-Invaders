@@ -1,6 +1,9 @@
-import pygame
-from PygameObject import PygameObject
 from typing import TYPE_CHECKING
+
+import pygame
+
+from PygameObject import PygameObject
+from Sounds import Sounds
 
 if TYPE_CHECKING:
     from Ship import Ship
@@ -18,8 +21,10 @@ class Bullet(PygameObject):
                  enemies: list,
                  ship: 'Ship',
                  texture: pygame.Surface,
+                 sounds: Sounds,
                  screen: pygame.Surface):
         super().__init__(x, y, w, h, speed_x, speed_y, texture, screen)
+        self.sounds = sounds
         self.enemies = enemies
         self.ship = ship
 
@@ -28,6 +33,7 @@ class Bullet(PygameObject):
         Checks if the bullet is about to be destroyed or not False if it should be destroyed, True if stays
         :return: bool
         """
+        from Ship import Player
 
         # When bullet hits the edge, it vanishes
         if not self.move():
@@ -37,6 +43,8 @@ class Bullet(PygameObject):
         for enemy in self.enemies:
             if self.rect.colliderect(enemy.rect):
                 enemy.hp -= self.ship.damage
+                if isinstance(enemy, Player):
+                    self.sounds["player_hit"].play()
                 self.ship.last_time_shot = 0
                 return False
 
@@ -48,12 +56,15 @@ class Bullets:
     def __init__(self):
         self.bullets = []
 
-    def update_all_bullets(self) -> None:
+    def check_bullets(self) -> None:
         for i in range(len(self.bullets) - 1, -1, -1):
             bullet = self.bullets[i]
             if not bullet.check_bullet():
                 self.bullets.pop(i)
                 continue
+
+    def draw_all_bullets(self):
+        for bullet in self.bullets:
             bullet.draw()
 
     def append(self, bullet: Bullet):

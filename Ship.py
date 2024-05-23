@@ -1,7 +1,14 @@
-from PygameObject import PygameObject
+from typing import TYPE_CHECKING
+
 import pygame
-from Direction import Direction
+
 from Bullet import Bullet
+from Direction import Direction
+from PygameObject import PygameObject
+from Sounds import Sounds
+
+if TYPE_CHECKING:
+    from Bullet import Bullet
 
 
 class Ship(PygameObject):
@@ -16,22 +23,23 @@ class Ship(PygameObject):
                  damage: float,
                  shooting_speed: float,
                  texture: pygame.Surface,
+                 sounds: Sounds,
                  screen: pygame.Surface):
         super().__init__(x, y, w, h, speed_x, speed_y, texture, screen)
         self.hp = hp
         self.damage = damage
         self.shooting_speed = shooting_speed * 1000
-        self.last_time_shot = 0
+        self.last_time_shot = pygame.time.get_ticks() - 1800  # Starting delay before shooting
+        self.sounds = sounds
 
     def shoot(self,
               speed: float,
               enemies: list,
               direction: Direction,
               texture: pygame.Surface,
-              sound_effect: pygame.mixer.Sound | None):
+              ) -> Bullet:
 
-        if pygame.time.get_ticks() - self.last_time_shot < self.shooting_speed:
-            return None
+        from Bullet import Bullet
 
         if direction == direction.UP:
             speed *= -1
@@ -45,14 +53,38 @@ class Ship(PygameObject):
                         enemies,
                         self,
                         texture,
+                        self.sounds,
                         self.screen
                         )
 
-        if sound_effect:
-            sound_effect.play()
+        if isinstance(self, Player):
+            self.sounds["shot_sound"].play()
 
         self.last_time_shot = pygame.time.get_ticks()
         return bullet
 
+    def can_shoot(self):
+        return pygame.time.get_ticks() - self.last_time_shot >= self.shooting_speed
+
     def is_alive(self):
         return self.hp > 0
+
+    def heal(self, amount: float):
+        self.hp += amount
+
+
+class Player(Ship):
+    def __init__(self,
+                 x: float,
+                 y: float,
+                 w: float,
+                 h: float,
+                 speed_x: float,
+                 speed_y: float,
+                 hp: float,
+                 damage: float,
+                 shooting_speed: float,
+                 texture: pygame.Surface,
+                 sounds: Sounds,
+                 screen: pygame.Surface):
+        super().__init__(x, y, w, h, speed_x, speed_y, hp, damage, shooting_speed, texture, sounds, screen)

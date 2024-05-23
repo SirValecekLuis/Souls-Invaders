@@ -1,28 +1,27 @@
 import pygame.mixer
-from Ship import Ship
-from GameScreen import GameScreen
+from pygame.locals import *
+
+from Buffs import Buffs
 from Bullet import Bullets
 from Effects import Effects
-from Textures import Textures
-from Sounds import Sounds
 from EnemyHandler import EnemyHandler
 from Events import Events
+from GameScreen import GameScreen
+from Ship import Player
+from Sounds import Sounds
 from TextHandler import TextHandler
+from Textures import Textures
 
 
-# TODO: Add some special effect or bonuses or anything
-# TODO: Add a pause after boss fight like async 3s pause or something like that (maybe do check_enemies async? or add timer to dhat?)
-# TODO: Add some time before enemy starts shooting fater spawning
-# TODO: Add tips and hints to intro screen + explanation how to play
+# FEATURES TO ADD
 # TODO: Add special attack for some key (like ctrl)
 # TODO: Add maybe sound for ship getting hit
-# TODO: Winning music after completing the game
-# TODO: Spawn some effect after spawning boss
+# TODO: Add text or particles when player has a buff
+# TODO: Like sounds make textures loading dynamic based on dictionary access (not necessary for now)
 
-# TODO: Fix shooting? / Change first boss, too easy
+# QUALITY OF CODE TODO: Add comments to each function in code
 
-
-def update_player(player: Ship,
+def update_player(player: Player,
                   screen: pygame.Surface) -> None:
     player.draw()
     if player.hp <= 0:
@@ -30,56 +29,78 @@ def update_player(player: Ship,
 
 
 def main():
-    pygame.mixer.init()
-    pygame.mixer.music.set_volume(0.7)
+    pygame.mixer.pre_init(44100, 16, 2, 4096)
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    pygame.mixer.init()
+    pygame.mixer.music.set_volume(0.5)
+    pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
+
+    icon = pygame.image.load("icon.png")
+    pygame.display.set_icon(icon)
+
+    flags = FULLSCREEN | DOUBLEBUF
+    screen = pygame.display.set_mode((0, 0), flags, vsync=1)
     pygame.display.set_caption("Souls Invaders")
     clock = pygame.time.Clock()
 
+    # Putting textures here to load them before the start of intro screen, the rest after load screen to diversify load
     textures = Textures(screen)
-    sounds = Sounds()
-    effects = Effects()
-    bullets = Bullets()
-    enemy_handler = EnemyHandler()
-
-    # Player Ship
-    player = Ship(screen.get_size()[0] // 2 - 50,
-                  screen.get_size()[1] - 100,
-                  100,
-                  100,
-                  12,
-                  0,
-                  250,
-                  1000,
-                  1,
-                  textures["player"],
-                  textures["screen"])
-
     # Start of the game
     GameScreen.intro_screen(screen)
+
+    sounds = Sounds()
+    # Player Ship
+    player = Player(screen.get_size()[0] // 2 - 50,
+                    screen.get_size()[1] - 100,
+                    100,
+                    100,
+                    12,
+                    0,
+                    125,
+                    10,
+                    1,
+                    textures["player"],
+                    sounds,
+                    textures["screen"])
+
+    effects = Effects()
+    bullets = Bullets()
+    enemy_handler = EnemyHandler(sounds, textures, effects)
+    text_handler = TextHandler()
+    buffs = Buffs(player, textures, sounds, screen)
     pygame.time.wait(300)
     start_time = pygame.time.get_ticks()
     while True:
         clock.tick(60)
         screen.blit(textures["background"], (0, 0))
 
-        if not Events.check_event(player, bullets, enemy_handler, textures, sounds):
-            break
-
         # Handles all text on screen
-        TextHandler.show_ingame_text(player, start_time, screen)
+        text_handler.show_ingame_text(player, start_time, screen)
 
-        enemy_handler.check_enemies(player, bullets, effects, textures, sounds)
+        if not Events.check_game_state(player, bullets, enemy_handler, textures, sounds):
+            break
 
         # Check everything and update
         update_player(player, screen)
-        enemy_handler.update_all_enemies()
+
+        # check bullets
+        bullets.check_bullets()
+        bullets.draw_all_bullets()
+
+        # Check enemies
+        enemy_handler.check_enemies(player, bullets)
+        enemy_handler.draw_all_enemies()
+
+        # Check effects
         effects.update_all_effects()
-        bullets.update_all_bullets()
 
         # check phase (spawning mobs)
-        enemy_handler.check_phase(start_time, textures, sounds)
+        enemy_handler.check_phase(start_time)
+
+        # generate and check buffs:
+        buffs.spawn_buff()
+        buffs.check_all_buffs()
+        buffs.draw_all_buffs()
 
         # shows everything
         pygame.display.flip()

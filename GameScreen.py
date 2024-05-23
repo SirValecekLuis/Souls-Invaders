@@ -1,5 +1,7 @@
 import pygame
 
+from TextHandler import TextHandler
+
 
 class GameScreen:
 
@@ -7,17 +9,34 @@ class GameScreen:
     def intro_screen(screen: pygame.Surface):
         font = pygame.font.Font("font/OptimusPrinceps.ttf", 32)
 
-        welcome_text = font.render(f"Welcome to Souls Invader.\n", True, (129, 0, 1))
-        welcome_text.blit(welcome_text, (10, screen.get_height() // 2))
-        welcome_rect = welcome_text.get_rect()
-        welcome_rect.center = (screen.get_width() // 2, screen.get_height() // 3)
+        welcome_text, welcome_rect = TextHandler.get_centered_text("Welcome to invader souls",
+                                                                   screen.get_height() // 3.2,
+                                                                   font,
+                                                                   screen)
 
-        space_text = font.render(f"Press SPACE to start.", True, (129, 0, 1))
-        space_text.blit(space_text, (10, screen.get_height() // 2))
-        space_rect = space_text.get_rect()
-        space_rect.center = (screen.get_width() // 2, screen.get_height() // 2)
+        space_text, space_rect = TextHandler.get_centered_text("Press SPACE to start.",
+                                                               screen.get_height() // 2.5,
+                                                               font,
+                                                               screen)
 
+        movement_text, movement_rect = TextHandler.get_centered_text("Movement: WASD or arrows",
+                                                                     screen.get_height() // 2,
+                                                                     font,
+                                                                     screen)
+
+        shooting_text, shooting_rect = TextHandler.get_centered_text("Shooting: Spacebar",
+                                                                     screen.get_height() // 1.8,
+                                                                     font,
+                                                                     screen)
+
+        good_luck_text, good_luck_rect = TextHandler.get_centered_text("Good luck.",
+                                                                       screen.get_height() // 1.4,
+                                                                       font,
+                                                                       screen)
+
+        clock = pygame.time.Clock()
         while True:
+            clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit(0)
@@ -28,6 +47,9 @@ class GameScreen:
             screen.fill((0, 0, 0))
             screen.blit(welcome_text, welcome_rect)
             screen.blit(space_text, space_rect)
+            screen.blit(movement_text, movement_rect)
+            screen.blit(shooting_text, shooting_rect)
+            screen.blit(good_luck_text, good_luck_rect)
 
             pygame.display.flip()
 
@@ -48,7 +70,7 @@ class GameScreen:
 
         pygame.display.flip()
 
-        pygame.time.delay(7_300)
+        pygame.time.delay(4500)
         pygame.quit()
         exit(0)
 

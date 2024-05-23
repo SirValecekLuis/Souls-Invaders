@@ -1,5 +1,5 @@
-import pygame
 import gif_pygame
+import pygame
 
 
 class Textures:
@@ -19,12 +19,15 @@ class Textures:
         self.add_texture("boss_1", 250, 250)
         self.add_texture("boss_2", 250, 250)
         self.add_texture("player_bullet", 40, 40)
-        self.add_texture("enemy_bullet", 40, 40)
+        self.add_texture("enemy_bullet", 32, 32)
+        self.add_texture("speed", 48, 48)
+        self.add_texture("damage", 48, 48)
+        self.add_texture("heal", 48, 48)
 
         self.add_gif("boom_effect")
 
     def add_texture(self, name: str, size_x=None, size_y=None):
-        image = pygame.image.load(f"textures/{name}.png")
+        image = pygame.image.load(f"textures/{name}.png").convert_alpha()
         if size_x is not None and size_y is not None:
             image = pygame.transform.scale(image, (size_x, size_y))
         self.textures[name] = image
