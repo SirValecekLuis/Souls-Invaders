@@ -1,3 +1,5 @@
+from sys import exit
+
 import pygame
 
 from TextHandler import TextHandler

@@ -39,7 +39,7 @@ def main():
     pygame.display.set_icon(icon)
 
     flags = FULLSCREEN | DOUBLEBUF
-    screen = pygame.display.set_mode((0, 0), flags, vsync=1)
+    screen = pygame.display.set_mode((0, 0), flags, vsync=1, display=0)
     pygame.display.set_caption("Souls Invaders")
     clock = pygame.time.Clock()
 
