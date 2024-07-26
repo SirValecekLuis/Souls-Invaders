@@ -1,18 +1,21 @@
+"""This file is for enemy handler that deals with waves, enemies and overall sets the game and how it proceeds."""
 import random
 
 import pygame
 
-from Bullet import Bullets
-from Direction import Direction
-from Effects import Effects
-from Enemy import Enemy
-from GameScreen import GameScreen
-from Ship import Player
-from Sounds import Sounds
-from Textures import Textures
+from bullet import Bullets
+from direction import Direction
+from effects import Effects
+from enemy import Enemy
+from game_screen import GameScreen
+from ship import Player
+from sounds import Sounds
+from textures import Textures
 
 
 class EnemyHandler:
+    """This class handles all the enemies and will deal with waves in the game and spawning."""
+
     def __init__(self, sounds: Sounds, textures: Textures, effects: Effects):
         self.phase = 1
         self.enemies = []
@@ -29,8 +32,20 @@ class EnemyHandler:
                        shooting_speed: float,
                        count: int,
                        boss: bool,
-                       enemy_texture: pygame.Surface,
-                       screen: pygame.Surface):
+                       enemy_texture: pygame.Surface | None,
+                       screen: pygame.Surface) -> None:
+        """
+        This function ensures that there are only enemies between count 0 to 50 and spawns an enemy
+        :param speed_x: Speed of enemy
+        :param hp: Hp of enemy
+        :param damage: Damage dealt by enemy
+        :param shooting_speed: Shooting speed
+        :param count: Enemies count
+        :param boss: True or False
+        :param enemy_texture: Texture
+        :param screen: Pygame screen
+        :return: None
+        """
         if count > 50 or count < 0:
             raise Exception("Invalid amount of enemies to spawn")
 
@@ -85,8 +100,12 @@ class EnemyHandler:
             self.enemies.append(new_enemy)
             i += 1
 
-    def check_phase(self,
-                    start_time: int) -> None:
+    def check_phase(self, start_time: int) -> None:
+        """
+        This function checks in which phase the game is, this will probably be rewritten or removed in the future.
+        :param start_time: Start time for the end screen to tell how many minutes the games was running
+        :return: None
+        """
 
         if len(self.enemies) != 0:
             return
@@ -98,7 +117,8 @@ class EnemyHandler:
             if self.phase != 1:
                 self.sounds["laugh"].play()
             return
-        elif pygame.time.get_ticks() - self.time_pause > self.time_wait:
+
+        if pygame.time.get_ticks() - self.time_pause > self.time_wait:
             self.time_pause = None
         else:
             return
@@ -106,23 +126,23 @@ class EnemyHandler:
         match self.phase:
             case 1:
                 self.generate_enemy(10, 20, 3, 2, 20, False, self.textures["enemy"], self.textures["screen"])
-                pygame.mixer.music.load("sounds/background.mp3")
+                pygame.mixer.music.load("./sounds/background.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
                 self.time_wait = 2000
             case 2:
                 self.generate_enemy(15, 1000, 15, 0.45, 1, True, self.textures["boss_1"], self.textures["screen"])
-                pygame.mixer.music.load("sounds/first_boss.mp3")
+                pygame.mixer.music.load("./sounds/first_boss.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
             case 3:
                 self.generate_enemy(10, 25, 4, 1.5, 25, False, self.textures["enemy"], self.textures["screen"])
-                pygame.mixer.music.load("sounds/background.mp3")
+                pygame.mixer.music.load("./sounds/background.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
             case 4:
                 self.generate_enemy(18, 2000, 30, 0.25, 1, True, self.textures["boss_2"], self.textures["screen"])
-                pygame.mixer.music.load("sounds/second_boss.mp3")
+                pygame.mixer.music.load("./sounds/second_boss.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
                 self.time_wait = 2000
@@ -134,9 +154,13 @@ class EnemyHandler:
 
         self.phase += 1
 
-    def check_enemies(self,
-                      player: Player,
-                      bullets: Bullets) -> None:
+    def check_enemies(self, player: Player, bullets: Bullets) -> None:
+        """
+        This checks all the enemies and plays sounds if enemy dies, etc.
+        :param player: Player
+        :param bullets: All the bullets in the game
+        :return: None
+        """
 
         for i in range(len(self.enemies) - 1, -1, -1):
             enemy = self.enemies[i]
@@ -154,5 +178,6 @@ class EnemyHandler:
                 i += 1
 
     def draw_all_enemies(self):
+        """Goes through all enemies and draws them."""
         for enemy in self.enemies:
             enemy.draw()

@@ -1,13 +1,16 @@
+"""This file is for Enemy class that is basically any creature in the game except the player itself."""
 import random
 
 import pygame
 
-from Direction import Direction
-from Ship import Ship
-from Sounds import Sounds
+from direction import Direction
+from ship import Ship
+from sounds import Sounds
 
 
 class Enemy(Ship):
+    """This is a class that represents any enemy in the game and derives from Ship."""
+
     def __init__(self,
                  x: float,
                  y: float,
@@ -27,6 +30,7 @@ class Enemy(Ship):
             self.speed_x *= -1
 
     def random_movement(self, enemies):
+        """Checks if the enemy should move to the other side or not."""
         for enemy in enemies:
             if enemy is not self and self.rect.colliderect(enemy.rect):
                 self.speed_x *= -1
