@@ -8,11 +8,11 @@ from bullet import Bullets
 from effects import Effects
 from enemy_handler import EnemyHandler
 from events import Events
-from game_screen import GameScreen
 from ship import Player
 from sounds import Sounds
 from text_handler import TextHandler
 from textures import Textures
+from main_menu import MainMenu
 
 
 # pylint: disable=fixme
@@ -54,12 +54,14 @@ from textures import Textures
 def update_player(player: Player, screen: pygame.Surface) -> None:
     """Draws a player and checks if he is dead or not."""
     if player.hp <= 0:
-        GameScreen.game_over_screen(screen)
+        # GameScreen.game_over_screen(screen)
+        ...
     player.draw()
 
 
 def main() -> None:
     """The main game loop."""
+
     pygame.mixer.pre_init(44100, 16, 2, 4096)
     pygame.init()
     pygame.mixer.init()
@@ -74,10 +76,13 @@ def main() -> None:
     pygame.display.set_caption("Souls Invaders")
     clock = pygame.time.Clock()
 
+
     # Putting textures here to load them before the start of intro screen, the rest after load screen to diversify load
     textures = Textures(screen)
+
     # Start of the game
-    GameScreen.intro_screen(screen)
+    menu = MainMenu(screen)
+    menu.start()
 
     sounds = Sounds()
     # Player Ship
@@ -101,6 +106,8 @@ def main() -> None:
     buffs = Buffs(player, textures, sounds, screen)
     pygame.time.wait(300)
     start_time = pygame.time.get_ticks()
+    events = Events(screen, bullets, textures, enemy_handler, clock, player)
+    
     while True:
         clock.tick(60)
         screen.blit(textures["background"], (0, 0))
@@ -108,7 +115,7 @@ def main() -> None:
         # Handles all text on screen
         text_handler.show_ingame_text(player, start_time, screen)
 
-        if not Events.check_game_state(player, bullets, enemy_handler, textures):   # pylint: disable=too-many-function-args
+        if not events.check_game_state():   # pylint: disable=too-many-function-args
             break
 
         # Check everything and update

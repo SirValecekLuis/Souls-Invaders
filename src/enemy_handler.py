@@ -7,7 +7,6 @@ from bullet import Bullets
 from direction import Direction
 from effects import Effects
 from enemy import Enemy
-from game_screen import GameScreen
 from ship import Player
 from sounds import Sounds
 from textures import Textures

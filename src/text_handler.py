@@ -32,7 +32,7 @@ class TextHandler:
         screen.blit(hp_text, (10, screen.get_height() // 2 + time_text.get_height()))
 
     @staticmethod
-    def get_centered_text(text: str, height: float, font: pygame.Font, screen: pygame.Surface) -> (
+    def get_centered_text(text: str, height: float, font: pygame.font, screen: pygame.Surface) -> (
             tuple)[pygame.Surface, pygame.Rect]:
         """
         This returns a centered text based on given height and text width.
