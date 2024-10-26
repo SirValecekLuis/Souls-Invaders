@@ -1,13 +1,15 @@
 import pygame
 import pygame_menu
 
-class EscMenu:
-    def __init__(self, screen: pygame.display, clock: pygame.time.Clock):
-        self.clock = clock
+from src.managers.screen_manager import ScreenManager
+from src.managers.service_manager import ServiceManager
+from src.managers.time_manager import TimeManager
 
-        self.clock.tick(0)
 
-        self.screen = screen
+class MainMenu:
+    def __init__(self):
+        self.screen = ServiceManager.get(ScreenManager)
+        self.time = ServiceManager.get(TimeManager)
         self.theme = pygame_menu.themes.Theme(
             background_color=(40, 40, 40),
             title_font=pygame.font.Font("./font/OptimusPrinceps.ttf", 70),
@@ -20,17 +22,17 @@ class EscMenu:
         self.menu = pygame_menu.Menu('Souls Invaders', self.screen.get_width(), self.screen.get_height(),
                                      theme=self.theme)
 
-        self.menu.add.button('Continue', self.unpause)
+        self.menu.add.button('Play', self.new_game)
         self.menu.add.button('Settings', self.settings)
-        self.menu.add.button('Quit game', pygame_menu.events.EXIT)
+        self.menu.add.button('Quit', pygame_menu.events.EXIT)
 
-    def unpause(self):
-        self.clock.tick(60)
+    def new_game(self):
+        self.time.toggle_pause()
         self.menu.disable()
 
     def settings(self):
         ...
 
     def start(self):
-        self.menu.mainloop(self.screen)
-
+        self.time.toggle_pause()
+        self.menu.mainloop(self.screen.get_screen())

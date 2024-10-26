@@ -3,10 +3,8 @@ import random
 
 import pygame
 
-from direction import Direction
-from ship import Ship
-from sounds import Sounds
-
+from src.objects.direction import Direction
+from src.objects.ship import Ship
 
 class Enemy(Ship):
     """This is a class that represents any enemy in the game and derives from Ship."""
@@ -21,10 +19,8 @@ class Enemy(Ship):
                  hp: float,
                  damage: float,
                  shooting_speed: float,
-                 texture: pygame.Surface,
-                 sounds: Sounds,
-                 screen: pygame.Surface):
-        super().__init__(x, y, w, h, speed_x, speed_y, hp, damage, shooting_speed, texture, sounds, screen)
+                 texture: pygame.Surface):
+        super().__init__(x, y, w, h, speed_x, speed_y, hp, damage, shooting_speed, texture)
         self.direction = random.choice([Direction.LEFT, Direction.RIGHT])
         if self.direction == Direction.LEFT:
             self.speed_x *= -1

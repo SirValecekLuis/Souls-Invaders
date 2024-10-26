@@ -3,14 +3,16 @@
 import gif_pygame
 import pygame
 
+from src.managers.screen_manager import ScreenManager
+from src.managers.service_manager import ServiceManager
 
-class Textures:
+
+class TextureManager:
     """This class provides a support to the game in way of providing textures, scaling them and storing them loaded."""
 
-    def __init__(self, screen):
+    def __init__(self):
         self.textures = {}
-        self.screen = screen
-        self.textures["screen"] = screen
+        self.screen = ServiceManager.get(ScreenManager)
         self.load_textures()
 
     def __getitem__(self, index: str) -> pygame.Surface | gif_pygame.GIFPygame:

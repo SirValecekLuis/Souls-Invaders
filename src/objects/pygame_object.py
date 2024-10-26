@@ -4,6 +4,9 @@ This file is for basic PygameObject class that handles basic stuff like movement
 
 import pygame
 
+from src.managers.screen_manager import ScreenManager
+from src.managers.service_manager import ServiceManager
+
 
 class PygameObject:
     """
@@ -18,11 +21,10 @@ class PygameObject:
                  h: float,
                  speed_x: float,
                  speed_y: float,
-                 texture: pygame.Surface | None,
-                 screen: pygame.Surface):
+                 texture: pygame.Surface | None):
 
         self.rect = pygame.Rect(x, y, w, h)
-        self.screen = screen
+        self.screen = ServiceManager.get(ScreenManager)
         if texture:
             self.texture = texture
         self.speed_x = speed_x
@@ -36,7 +38,7 @@ class PygameObject:
         if self.texture is not None:
             self.screen.blit(self.texture, self.rect.topleft)
         else:
-            pygame.draw.rect(self.screen, (255, 0, 0), self.rect)
+            pygame.draw.rect(self.screen.get_screen(), (255, 0, 0), self.rect)
 
     def move(self) -> bool:
         """

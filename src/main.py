@@ -1,25 +1,24 @@
 """The main file where all the functions are called and where the game loop is."""
+import pygame
 
-import pygame.mixer
-from pygame.constants import QUIT, KEYDOWN, KEYUP, FULLSCREEN, DOUBLEBUF  # pylint: disable=no-name-in-module
-
-from buffs import Buffs
-from bullet import Bullets
-from effects import Effects
-from enemy_handler import EnemyHandler
-from events import Events
-from ship import Player
-from sounds import Sounds
-from text_handler import TextHandler
-from textures import Textures
-from main_menu import MainMenu
+from src.managers.buff_manager import BuffManager
+from src.managers.bullet_manager import BulletManager
+from src.managers.effect_manager import EffectManager
+from src.managers.enemy_manager import EnemyManager
+from src.managers.event_manager import EventManager
+from src.managers.sound_manager import SoundManager
+from src.managers.service_manager import ServiceManager
+from src.managers.time_manager import TimeManager
+from src.managers.text_manager import TextManager
+from src.managers.texture_manager import TextureManager
+from src.managers.screen_manager import ScreenManager
+from src.objects.ship import Player
+from src.menu.main_menu import MainMenu
 
 
 # pylint: disable=fixme
 
 # IMPORTANT FEATURES THAT SHOULD BE DONE FIRST
-# TODO: game_screen and text_handler should be merged, it doesnt make sense now. + Write basic intro menu and ESC menu
-#   ASAP and that will probably change the whole game_screen and text_handler file
 # TODO: Write some game loop so player after dying will get back to menu and can play again without game shutting itself
 # TODO: Add a menu when ESC key is pressed with stats like movement speed, damage etc.
 # TODO: Replace intro screen with main menu
@@ -51,10 +50,10 @@ from main_menu import MainMenu
 # TODO: Optimize to check collision only with enemies on the same y axis as the enemy that is calculating the collision
 # TODO: Maybe add some kind of parallelism or multithreading in the future?
 
-def update_player(player: Player, screen: pygame.Surface) -> None:
+def update_player(player: Player) -> None:
     """Draws a player and checks if he is dead or not."""
     if player.hp <= 0:
-        # GameScreen.game_over_screen(screen)
+        # TODO: end game
         ...
     player.draw()
 
@@ -62,32 +61,26 @@ def update_player(player: Player, screen: pygame.Surface) -> None:
 def main() -> None:
     """The main game loop."""
 
-    pygame.mixer.pre_init(44100, 16, 2, 4096)
-    pygame.init()
-    pygame.mixer.init()
-    pygame.mixer.music.set_volume(0.5)
-    pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
+    screen = ScreenManager()
+    ServiceManager.register(ScreenManager, screen)
 
-    icon = pygame.image.load("./icon.png")
-    pygame.display.set_icon(icon)
+    sounds = SoundManager()
+    ServiceManager.register(SoundManager, sounds)
 
-    flags = FULLSCREEN | DOUBLEBUF
-    screen = pygame.display.set_mode((0, 0), flags, vsync=1, display=0)
-    pygame.display.set_caption("Souls Invaders")
-    clock = pygame.time.Clock()
+    # Load them before game starts
+    textures = TextureManager()
+    ServiceManager.register(TextureManager, textures)
 
-
-    # Putting textures here to load them before the start of intro screen, the rest after load screen to diversify load
-    textures = Textures(screen)
+    time_manager = TimeManager()
+    ServiceManager.register(TimeManager, time_manager)
 
     # Start of the game
-    menu = MainMenu(screen)
+    menu = MainMenu()
     menu.start()
 
-    sounds = Sounds()
     # Player Ship
-    player = Player(screen.get_size()[0] // 2 - 50,
-                    screen.get_size()[1] - 100,
+    player = Player(screen.get_width() // 2 - 50,
+                    screen.get_height() - 100,
                     100,
                     100,
                     12,
@@ -95,45 +88,51 @@ def main() -> None:
                     125,
                     10,
                     1,
-                    textures["player"],
-                    sounds,
-                    textures["screen"])
+                    textures["player"])
 
-    effects = Effects()
-    bullets = Bullets()
-    enemy_handler = EnemyHandler(sounds, textures, effects)
-    text_handler = TextHandler()
-    buffs = Buffs(player, textures, sounds, screen)
-    pygame.time.wait(300)
-    start_time = pygame.time.get_ticks()
-    events = Events(screen, bullets, textures, enemy_handler, clock, player)
-    
+    effects = EffectManager()
+    ServiceManager.register(EffectManager, effects)
+
+    bullets = BulletManager()
+    ServiceManager.register(BulletManager, bullets)
+
+    enemy_manager = EnemyManager()
+    ServiceManager.register(EnemyManager, enemy_manager)
+
+    text_handler = TextManager()
+    ServiceManager.register(TextManager, text_handler)
+
+    buffs = BuffManager(player)
+    ServiceManager.register(BuffManager, buffs)
+
+    events = EventManager(player)
+    ServiceManager.register(EventManager, events)
+
     while True:
-        clock.tick(60)
         screen.blit(textures["background"], (0, 0))
 
         # Handles all text on screen
-        text_handler.show_ingame_text(player, start_time, screen)
+        text_handler.render_text(player)
 
-        if not events.check_game_state():   # pylint: disable=too-many-function-args
+        if not events.check_game_state():
             break
 
         # Check everything and update
-        update_player(player, screen)
+        update_player(player)
 
         # check bullets
         bullets.check_bullets()
         bullets.draw_all_bullets()
 
         # Check enemies
-        enemy_handler.check_enemies(player, bullets)
-        enemy_handler.draw_all_enemies()
+        enemy_manager.check_enemies(player)
+        enemy_manager.draw_all_enemies()
 
         # Check effects
         effects.update_all_effects()
 
         # check phase (spawning mobs)
-        enemy_handler.check_phase(start_time)
+        enemy_manager.check_phase()
 
         # generate and check buffs:
         buffs.spawn_buff()
@@ -143,8 +142,11 @@ def main() -> None:
         # shows everything
         pygame.display.flip()
 
+        # update time
+        time_manager.update()
+
         # Clear the screen before the next frame
-        screen.fill((0, 0, 0))
+        screen.get_screen().fill((0, 0, 0))
 
         # END OF THE GAME CYCLE
     pygame.quit()

@@ -3,9 +3,11 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from direction import Direction
-from pygame_object import PygameObject
-from sounds import Sounds
+from src.managers.time_manager import TimeManager
+from src.objects.direction import Direction
+from src.objects.pygame_object import PygameObject
+from src.managers.service_manager import ServiceManager
+from src.managers.sound_manager import SoundManager
 
 if TYPE_CHECKING:
     from bullet import Bullet
@@ -24,15 +26,16 @@ class Ship(PygameObject):
                  hp: float,
                  damage: float,
                  shooting_speed: float,
-                 texture: pygame.Surface,
-                 sounds: Sounds,
-                 screen: pygame.Surface):
-        super().__init__(x, y, w, h, speed_x, speed_y, texture, screen)
+                 texture: pygame.Surface):
+        super().__init__(x, y, w, h, speed_x, speed_y, texture)
         self.hp = hp
         self.damage = damage
         self.shooting_speed = shooting_speed * 1000
-        self.last_time_shot = pygame.time.get_ticks() - 1800  # Starting delay before shooting
-        self.sounds = sounds
+
+        self.sounds = ServiceManager.get(SoundManager)
+        self.time = ServiceManager.get(TimeManager)
+
+        self.last_time_shot = self.time.get_total_time() - 1800  # Starting delay before shooting
 
     def shoot(self,
               speed: float,
@@ -48,7 +51,7 @@ class Ship(PygameObject):
         :param texture: Bullet texture
         :return:
         """
-        from bullet import Bullet  # pylint: disable=import-outside-toplevel
+        from src.objects.bullet import Bullet  # pylint: disable=import-outside-toplevel
 
         if direction == direction.UP:
             speed *= -1
@@ -61,21 +64,18 @@ class Ship(PygameObject):
                         speed,
                         enemies,
                         self,
-                        texture,
-                        self.sounds,
-                        self.screen
-                        )
+                        texture)
 
         if isinstance(self, Player):
             self.sounds["shot_sound"].play()
 
-        self.last_time_shot = pygame.time.get_ticks()
+        self.last_time_shot = self.time.get_total_time()
         return bullet
 
     def can_shoot(self) -> bool:
         """If time elapsed from the last shoot is greater than shooting speed,
         then player can shoot and True is returned."""
-        return pygame.time.get_ticks() - self.last_time_shot >= self.shooting_speed
+        return self.time.get_total_time() - self.last_time_shot >= self.shooting_speed
 
     def is_alive(self) -> bool:
         """Returns True if HP is > 0"""

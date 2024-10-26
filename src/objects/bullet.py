@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from pygame_object import PygameObject
-from sounds import Sounds
+from src.objects.pygame_object import PygameObject
+from src.managers.service_manager import ServiceManager
+from src.managers.sound_manager import SoundManager
 
 if TYPE_CHECKING:
     from ship import Ship
@@ -22,11 +23,9 @@ class Bullet(PygameObject):
                  speed_y: float,
                  enemies: list,
                  ship: 'Ship',
-                 texture: pygame.Surface | None,
-                 sounds: Sounds,
-                 screen: pygame.Surface):
-        super().__init__(x, y, w, h, speed_x, speed_y, texture, screen)
-        self.sounds = sounds
+                 texture: pygame.Surface | None):
+        super().__init__(x, y, w, h, speed_x, speed_y, texture)
+        self.sounds = ServiceManager.get(SoundManager)
         self.enemies = enemies
         self.ship = ship
 
@@ -35,7 +34,7 @@ class Bullet(PygameObject):
         Checks if the bullet is about to be destroyed or not False if it should be destroyed, True if stays
         :return: Bool
         """
-        from ship import Player  # pylint: disable=import-outside-toplevel
+        from src.objects.ship import Player  # pylint: disable=import-outside-toplevel
 
         # When a bullet hits the edge, it vanishes and resets shoot timer for ship, so it can shoot again
         if not self.move():
@@ -52,27 +51,3 @@ class Bullet(PygameObject):
 
         # If nothing happened, a bullet is shown
         return True
-
-
-class Bullets:
-    """This class handles all projectiles that derive from class Bullet and will check collision and draws them."""
-
-    def __init__(self):
-        self.bullets = []
-
-    def check_bullets(self) -> None:
-        """Checks all the bullets and things that derive from Bullet class on the screen."""
-        for i in range(len(self.bullets) - 1, -1, -1):
-            bullet = self.bullets[i]
-            if not bullet.check_bullet():
-                self.bullets.pop(i)
-                continue
-
-    def draw_all_bullets(self):
-        """Called every frame to draw all bullets on the screen and move them."""
-        for bullet in self.bullets:
-            bullet.draw()
-
-    def append(self, bullet: Bullet):
-        """Adds a Bullet class instance in the list to check on it next frame."""
-        self.bullets.append(bullet)
