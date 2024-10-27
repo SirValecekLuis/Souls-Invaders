@@ -7,7 +7,7 @@ from src.managers.service_manager import ServiceManager
 from src.managers.time_manager import TimeManager
 from src.menu.esc_menu import EscMenu
 from src.managers.bullet_manager import BulletManager
-from src.managers.enemy_manager import EnemyManager
+from src.managers.wave_manager import WaveManager
 from src.managers.texture_manager import TextureManager
 from src.objects.direction import Direction
 from src.objects.ship import Player
@@ -20,7 +20,7 @@ class EventManager:
         self.screen = ServiceManager.get(ScreenManager)
         self.bullets = ServiceManager.get(BulletManager)
         self.textures = ServiceManager.get(TextureManager)
-        self.enemy_handler = ServiceManager.get(EnemyManager)
+        self.enemy_handler = ServiceManager.get(WaveManager)
         self.time = ServiceManager.get(TimeManager)
         self.player = player
         self.last_time_opened = self.time.get_total_time()
@@ -53,7 +53,7 @@ class EventManager:
 
         if keys[pygame.K_SPACE]:
             if self.player.can_shoot():
-                bullet = self.player.shoot(self.screen.get_height() // 32, self.enemy_handler.enemies,
+                bullet = self.player.shoot(self.screen.get_height() // 0.8, self.enemy_handler.enemies,
                                            Direction.UP,
                                            self.textures["player_bullet"])
 

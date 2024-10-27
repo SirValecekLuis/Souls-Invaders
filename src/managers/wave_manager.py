@@ -16,7 +16,7 @@ from src.objects.enemy import Enemy
 from src.objects.ship import Player
 
 
-class EnemyManager:
+class WaveManager:
     """This class handles all the enemies and will deal with waves in the game and spawning."""
 
     def __init__(self):
@@ -124,23 +124,23 @@ class EnemyManager:
 
         match self.phase:
             case 1:
-                self.generate_enemy(10, 20, 3, 2, 20, False, self.textures["enemy"])
+                self.generate_enemy(500, 20, 3, 2, 20, False, self.textures["enemy"])
                 pygame.mixer.music.load("./sounds/background.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
                 self.time_wait = 2000
             case 2:
-                self.generate_enemy(15, 1000, 15, 0.45, 1, True, self.textures["boss_1"])
+                self.generate_enemy(600, 1000, 15, 0.45, 1, True, self.textures["boss_1"])
                 pygame.mixer.music.load("./sounds/first_boss.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
             case 3:
-                self.generate_enemy(10, 25, 4, 1.5, 25, False, self.textures["enemy"])
+                self.generate_enemy(400, 25, 4, 1.5, 25, False, self.textures["enemy"])
                 pygame.mixer.music.load("./sounds/background.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
             case 4:
-                self.generate_enemy(18, 2000, 30, 0.25, 1, True, self.textures["boss_2"])
+                self.generate_enemy(700, 2000, 30, 0.25, 1, True, self.textures["boss_2"])
                 pygame.mixer.music.load("./sounds/second_boss.mp3")
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)
@@ -169,7 +169,7 @@ class EnemyManager:
             else:
                 enemy.random_movement(self.enemies)
                 if enemy.can_shoot():
-                    bullet = enemy.shoot(self.screen.get_height() // 64, [player], Direction.DOWN,
+                    bullet = enemy.shoot(self.screen.get_height() // 1.6, [player], Direction.DOWN,
                                          self.textures["enemy_bullet"])
 
                     self.bullets.append(bullet)

@@ -4,7 +4,7 @@ import pygame
 from src.managers.buff_manager import BuffManager
 from src.managers.bullet_manager import BulletManager
 from src.managers.effect_manager import EffectManager
-from src.managers.enemy_manager import EnemyManager
+from src.managers.wave_manager import WaveManager
 from src.managers.event_manager import EventManager
 from src.managers.sound_manager import SoundManager
 from src.managers.service_manager import ServiceManager
@@ -50,14 +50,6 @@ from src.menu.main_menu import MainMenu
 # TODO: Optimize to check collision only with enemies on the same y axis as the enemy that is calculating the collision
 # TODO: Maybe add some kind of parallelism or multithreading in the future?
 
-def update_player(player: Player) -> None:
-    """Draws a player and checks if he is dead or not."""
-    if player.hp <= 0:
-        # TODO: end game
-        ...
-    player.draw()
-
-
 def main() -> None:
     """The main game loop."""
 
@@ -83,7 +75,7 @@ def main() -> None:
                     screen.get_height() - 100,
                     100,
                     100,
-                    12,
+                    800,
                     0,
                     125,
                     10,
@@ -96,11 +88,11 @@ def main() -> None:
     bullets = BulletManager()
     ServiceManager.register(BulletManager, bullets)
 
-    enemy_manager = EnemyManager()
-    ServiceManager.register(EnemyManager, enemy_manager)
+    enemy_manager = WaveManager()
+    ServiceManager.register(WaveManager, enemy_manager)
 
-    text_handler = TextManager()
-    ServiceManager.register(TextManager, text_handler)
+    text_manager = TextManager()
+    ServiceManager.register(TextManager, text_manager)
 
     buffs = BuffManager(player)
     ServiceManager.register(BuffManager, buffs)
@@ -111,14 +103,11 @@ def main() -> None:
     while True:
         screen.blit(textures["background"], (0, 0))
 
-        # Handles all text on screen
-        text_handler.render_text(player)
-
         if not events.check_game_state():
             break
 
-        # Check everything and update
-        update_player(player)
+        # Check player HP
+        player.update()
 
         # check bullets
         bullets.check_bullets()
@@ -138,6 +127,10 @@ def main() -> None:
         buffs.spawn_buff()
         buffs.check_all_buffs()
         buffs.draw_all_buffs()
+
+        # Handles all text on screen
+        text_manager.render_hp_time(player)
+        text_manager.render_fps()
 
         # shows everything
         pygame.display.flip()

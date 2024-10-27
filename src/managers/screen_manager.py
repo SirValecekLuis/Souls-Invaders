@@ -8,7 +8,7 @@ class ScreenManager:
 
         # Window settings
         flags = FULLSCREEN | DOUBLEBUF
-        self.__screen = pygame.display.set_mode((0, 0), flags, vsync=1, display=0)
+        self.__screen = pygame.display.set_mode((0, 0), flags, vsync=0, display=0)
         pygame.display.set_caption("Souls Invaders")
 
     def get_width(self) -> int:

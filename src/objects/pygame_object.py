@@ -6,6 +6,7 @@ import pygame
 
 from src.managers.screen_manager import ScreenManager
 from src.managers.service_manager import ServiceManager
+from src.managers.time_manager import TimeManager
 
 
 class PygameObject:
@@ -25,10 +26,14 @@ class PygameObject:
 
         self.rect = pygame.Rect(x, y, w, h)
         self.screen = ServiceManager.get(ScreenManager)
-        if texture:
-            self.texture = texture
         self.speed_x = speed_x
         self.speed_y = speed_y
+        self.time = ServiceManager.get(TimeManager)
+
+        if texture:
+            self.texture = texture
+        else:
+            self.texture = None
 
     def draw(self) -> None:
         """
@@ -46,12 +51,18 @@ class PygameObject:
         :return: True if moved, False if move was not possible due to boundaries or any other aspect.
         """
         screen_w, screen_h = pygame.display.get_window_size()
+        dt = self.time.get_delta_time()
 
-        if self.rect.x + self.rect.width + self.speed_x > screen_w or self.rect.x + self.speed_x < 0:
+        new_x = self.rect.x + self.speed_x * dt
+        new_y = self.rect.y + self.speed_y * dt
+
+        if new_x + self.rect.width > screen_w or new_x < 0:
             return False
 
-        if self.rect.y + self.rect.height + self.speed_y > screen_h or self.rect.y + self.speed_y < 0:
+        if new_y + self.rect.height > screen_h or new_y < 0:
             return False
 
-        self.rect = self.rect.move(self.speed_x, self.speed_y)
+        self.rect.x = new_x
+        self.rect.y = new_y
+
         return True

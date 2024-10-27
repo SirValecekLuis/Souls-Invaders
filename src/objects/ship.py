@@ -96,6 +96,7 @@ class Ship(PygameObject):
 
 class Player(Ship):
     """This is a class that derives from Ship and represents a main player."""
+
     # def __init__(self,
     #              x: float,
     #              y: float,
@@ -110,3 +111,10 @@ class Player(Ship):
     #              sounds: Sounds,
     #              screen: pygame.Surface):
     #     super().__init__(x, y, w, h, speed_x, speed_y, hp, damage, shooting_speed, texture, sounds, screen)
+
+    def update(self) -> None:
+        """Draws a player and checks if he is dead or not."""
+        if self.hp <= 0:
+            # TODO: end game
+            ...
+        self.draw()
